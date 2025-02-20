@@ -1,0 +1,61 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: #001529;
+  transition: background 0.3s ease-in-out;
+}
+
+.logo-title-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.app-logo {
+  width: 50px;
+}
+
+.menu-button {
+  border: none;
+  background: none;
+  transition: all 0.3s ease-in-out;
+}
+
+.menu-button:hover,
+.menu-button:focus {
+  color: white;
+}
+
+.menu-popover .ant-popover-arrow {
+  display: none;
+}
+
+.menu-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.site-layout-content {
+  padding: 24px;
+  background: #fff;
+  min-height: 280px;
+}
+
+.layout {
+  min-height: 100vh;
+}
+
+.tier-button {
+  background-color: #1a2bc4;
+  border-color: #1a2bc4;
+  color: white;
+}
+
+.logout-button {
+  background-color: #f5222d;
+  border-color: #f5222d;
+  color: white;
+}

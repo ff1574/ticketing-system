@@ -1,0 +1,22 @@
+.footer {
+  text-align: center;
+  padding: 12px 0;
+  background-color: #001529;
+  color: white;
+}
+
+.footer-icons a {
+  font-size: 24px;
+  margin: 0 12px;
+  color: white;
+  transition: color 0.3s ease;
+}
+
+.footer-icons a:hover {
+  color: #1890ff; /* or any color you prefer */
+}
+
+.footer-text {
+  margin-top: 16px;
+  color: white;
+}
