@@ -1,10 +1,11 @@
-import React, { useContext } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { Layout } from "antd";
 import LoginForm from "./Components/LoginForm";
 import AppHeader from "./Components/Header";
 import AppFooter from "./Components/Footer";
 import AuthContext, { AuthProvider } from "./Util/authContext";
 import setupAxiosInterceptors from "./Util/setupAxiosInterceptors";
+import { fetchData } from "./Util/fetch";
 import "./Assets/CSS/main.css";
 
 const { Content } = Layout;
@@ -29,13 +30,33 @@ const App = () => {
 
 const AppContent = () => {
   const { currentUser } = useContext(AuthContext);
+  const [customerDetails, setCustomerDetails] = useState(null);
+
+  useEffect(() => {
+    const getCustomerDetails = async () => {
+      if (currentUser) {
+        const data = await fetchData("customer", currentUser.customer_id);
+        setCustomerDetails(data);
+      }
+    };
+
+    getCustomerDetails();
+  }, [currentUser]);
 
   return (
     <>
       {!currentUser ? (
         <LoginForm />
       ) : (
-      <p>Logged in as {currentUser.email}</p>
+        <>
+          {customerDetails ? (
+            <>
+              <p>Logged in as {customerDetails.customer_email}</p>
+            </>
+          ) : (
+            <p>Loading customer details...</p>
+          )}
+        </>
       )}
     </>
   );
