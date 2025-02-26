@@ -50,15 +50,32 @@ CREATE TABLE IF NOT EXISTS ticket
 	ticket_id					INT 						AUTO_INCREMENT				PRIMARY KEY,
     customer_id					INT 													NOT NULL,
     administrator_id			INT,
+    
     ticket_title				VARCHAR(100)											NOT NULL,
     ticket_description			TEXT													NOT NULL,
-    ticket_priority				ENUM('low', 'medium', 'high') 							NOT NULL,
+    
+    ticket_urgency				ENUM('low', 'medium', 'high'),
+    ticket_impact				ENUM('low', 'medium', 'high'),
+    ticket_priority				ENUM('low', 'medium', 'high'),
     ticket_status				ENUM('open', 'pending', 'resolved', 'unresolved')		DEFAULT 'open',
+    
     ticket_exp					INT 													DEFAULT 100,
+    unique_decline_count		INT														DEFAULT 0,
     
     created_at 					TIMESTAMP 					DEFAULT CURRENT_TIMESTAMP,
     resolved_at					TIMESTAMP,
     
     FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
     FOREIGN KEY (administrator_id) REFERENCES administrator (administrator_id)
+);
+
+CREATE TABLE ticket_decline_history (
+  decline_id 					INT 						AUTO_INCREMENT 				PRIMARY KEY,
+  ticket_id 					INT 													NOT NULL,
+  administrator_id 				INT 													NOT NULL,
+  declined_at 					TIMESTAMP 												DEFAULT CURRENT_TIMESTAMP,
+  
+  FOREIGN KEY (ticket_id) REFERENCES ticket(ticket_id),
+  FOREIGN KEY (administrator_id) REFERENCES administrator(administrator_id),
+  UNIQUE KEY unique_decline (ticket_id, administrator_id)
 );
