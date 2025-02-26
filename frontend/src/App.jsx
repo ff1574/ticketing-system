@@ -6,8 +6,8 @@ import { AlertProvider } from "./context/AlertContext";
 import { Alert } from "./components/Alert";
 import Navbar from "./components/Navbar";
 import LoginForm from "./components/LoginForm";
-import AdminDashboard from "./components/AdminDashboard";
-import CustomerDashboard from "./components/CustomerDashboard";
+import AdminDashboard from "./components/admin/AdminDashboard";
+import CustomerDashboard from "./components/customer/CustomerDashboard";
 
 setupAxiosInterceptors();
 
@@ -19,7 +19,7 @@ function AppContent() {
       <div className="min-h-screen flex flex-col">
         <Alert />
         <Navbar />
-        <main className="container mx-auto py-6 flex-1 flex justify-center items-center">
+        <main className="container mx-auto py-6 flex-1 flex justify-center">
           <LoginForm />
         </main>
       </div>
@@ -30,7 +30,7 @@ function AppContent() {
     <div className="min-h-screen flex flex-col">
       <Alert />
       <Navbar />
-      <main className="container mx-auto py-6 flex-1 flex justify-center items-center">
+      <main className="container mx-auto py-6 flex-1 flex justify-center">
         {currentUser?.role === "customer" ? (
           <CustomerDashboard />
         ) : (
