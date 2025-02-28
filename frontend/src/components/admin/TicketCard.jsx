@@ -154,7 +154,9 @@ export default function TicketCard() {
           advanceTicket();
         }, 2000);
       } else {
-        await api.put(`/ticket/declineTicket/${currentTicket.ticketId}`);  
+        await api.put(`/ticket/declineTicket/${currentTicket.ticketId}`, {
+          administratorId: currentUser.id,
+        });
         advanceTicket();
       }
     } catch (error) {
