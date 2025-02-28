@@ -114,19 +114,78 @@ exports.assignTicketToAgent = async (req, res) => {
 };
 
 exports.declineTicket = async (req, res) => {
-  try {
-    const ticketId = req.params.ticketId;
+  const { ticketId } = req.params;
+  const administratorId = req.body.administratorId;
 
+  try {
+    // Record the decline
     await db.execute(
-      `UPDATE ticket 
-         SET ticket_exp = ticket_exp + 50
-         WHERE ticket_id = ?`,
-      [ticketId]
+      `INSERT INTO ticket_decline_history 
+         (ticket_id, administrator_id)
+         VALUES (?, ?)`,
+      [ticketId, administratorId]
     );
 
-    res.json({ message: "Ticket declined - XP increased" });
+    // Check if this is first decline by this agent
+    const [existing] = await db.execute(
+      `SELECT 1 FROM ticket_decline_history 
+         WHERE ticket_id = ? AND administrator_id = ?
+         LIMIT 1`,
+      [ticketId, administratorId]
+    );
+
+    let xpToAdd = 0;
+    if (existing.length === 0) {
+      // First decline by this agent - update unique count and XP
+      const [ticket] = await db.execute(
+        `SELECT unique_decline_count 
+           FROM ticket 
+           WHERE ticket_id = ?`,
+        [ticketId]
+      );
+
+      const newUniqueCount = ticket[0].unique_decline_count + 1;
+      xpToAdd = this.calculateXP(newUniqueCount);
+
+      await db.execute(
+        `UPDATE ticket 
+           SET 
+             unique_decline_count = ?,
+             ticket_exp = ticket_exp + ?
+           WHERE ticket_id = ?`,
+        [newUniqueCount, xpToAdd, ticketId]
+      );
+    }
+
+    // Calculate cooldown based on agent's decline count
+    const [declines] = await db.execute(
+      `SELECT COUNT(*) AS count 
+         FROM ticket_decline_history 
+         WHERE ticket_id = ? AND administrator_id = ?`,
+      [ticketId, administratorId]
+    );
+
+    const cooldown = this.calculateCooldown(declines[0].count);
+
+    res.json({
+      message: "Ticket declined",
+      cooldown,
+      xpAdded: xpToAdd,
+    });
   } catch (error) {
     console.error("Decline Error:", error);
-    res.status(500).json({ message: "Failed to decline ticket" });
+    res.status(500).json({ message: "Failed to process decline" });
   }
+};
+
+// XP calculation (same as before)
+exports.calculateXP = (uniqueDeclineCount) => {
+  const xpMap = { 1: 50, 2: 100, 3: 150, 4: 200 };
+  return xpMap[Math.min(uniqueDeclineCount, 4)] || 200;
+};
+
+// Cooldown calculation (same as before)
+exports.calculateCooldown = (agentDeclineCount) => {
+  const cooldownMap = { 1: 7200, 2: 14400, 3: 86400, 4: 86400 }; // In seconds
+  return cooldownMap[Math.min(agentDeclineCount, 4)] || 86400;
 };
