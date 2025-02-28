@@ -69,13 +69,13 @@ CREATE TABLE IF NOT EXISTS ticket
     FOREIGN KEY (administrator_id) REFERENCES administrator (administrator_id)
 );
 
-CREATE TABLE ticket_decline_history (
+DROP TABLE IF EXISTS ticket_decline_history;
+CREATE TABLE IF NOT EXISTS ticket_decline_history (
   decline_id 					INT 						AUTO_INCREMENT 				PRIMARY KEY,
   ticket_id 					INT 													NOT NULL,
   administrator_id 				INT 													NOT NULL,
   declined_at 					TIMESTAMP 												DEFAULT CURRENT_TIMESTAMP,
   
   FOREIGN KEY (ticket_id) REFERENCES ticket(ticket_id),
-  FOREIGN KEY (administrator_id) REFERENCES administrator(administrator_id),
-  UNIQUE KEY unique_decline (ticket_id, administrator_id)
+  FOREIGN KEY (administrator_id) REFERENCES administrator(administrator_id)
 );
