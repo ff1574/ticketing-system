@@ -1,4 +1,4 @@
-import { } from "react";
+import {} from "react";
 import {
   LayoutGrid,
   Users,
@@ -10,7 +10,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import TicketCard from "./TicketCard";
+import TicketSwiper from "./TicketSwiper";
 
 const stats = [
   {
@@ -110,10 +110,7 @@ export function AdminDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                  >
+                  <Button variant="ghost" className="w-full justify-start">
                     Access {action.title}
                   </Button>
                 </CardContent>
@@ -131,7 +128,9 @@ export function AdminDashboard() {
               </p>
             </div>
           </div>
-          <TicketCard />
+          <div className="w-full max-w-md mx-auto">
+            <TicketSwiper />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
