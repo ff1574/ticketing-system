@@ -31,8 +31,7 @@ export function Navbar() {
     <nav className="border-b">
       <div className="flex h-16 items-center px-4">
         <div className="flex items-center gap-2 font-semibold">
-          <img src="../assets/favicon.jpg" alt="Logo" className="h-6 w-6" />
-          <span>Ticket System</span>
+          <span>TickSys</span>
           {currentUser?.role === "admin" && (
             <ShieldCheck variant="outline" className="ml-2">
               Administrator

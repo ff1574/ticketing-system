@@ -90,7 +90,7 @@ exports.assessTicket = async (ticketData) => {
     );
 
     const result = await model.generateContent(fullPrompt);
-    const responseText = await result.response.text();
+    const responseText = result.response.text();
 
     // Clean and parse the JSON response
     const jsonString = responseText

@@ -1,11 +1,5 @@
-import { useState } from "react";
-import {
-  Clock,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  Search,
-} from "lucide-react";
+import { useContext, useEffect, useState } from "react";
+import { Clock, CheckCircle2, XCircle, Search, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -22,54 +16,66 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import CustomerTicketView from "./CustomerTicketView";
+import AuthContext from "@/context/AuthContext";
+import { api } from "@/utils/api";
 
+// Update the status icons to match the database ENUM values
 const statusIcons = {
+  open: <Eye className="h-4 w-4 text-blue-500" />,
   pending: <Clock className="h-4 w-4 text-yellow-500" />,
   resolved: <CheckCircle2 className="h-4 w-4 text-green-500" />,
-  rejected: <XCircle className="h-4 w-4 text-red-500" />,
-  "in-progress": <AlertCircle className="h-4 w-4 text-blue-500" />,
+  unresolved: <XCircle className="h-4 w-4 text-red-500" />,
 };
 
-// Sample data - replace with actual API call
-const sampleTickets = [
-  {
-    id: "TIC-001",
-    title: "Email Client Issue",
-    status: "pending",
-    priority: "high",
-    created: "2024-02-22",
-    lastUpdated: "2024-02-22",
-  },
-  {
-    id: "TIC-002",
-    title: "Printer Not Working",
-    status: "resolved",
-    priority: "medium",
-    created: "2024-02-21",
-    lastUpdated: "2024-02-22",
-  },
-  {
-    id: "TIC-003",
-    title: "Software Installation",
-    status: "in-progress",
-    priority: "low",
-    created: "2024-02-20",
-    lastUpdated: "2024-02-21",
-  },
-];
-
 export function CustomerTicketMenu() {
+  const { currentUser } = useContext(AuthContext);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedTicketId, setSelectedTicketId] = useState(null);
+  const [tickets, setTickets] = useState([]);
 
-  const filteredTickets = sampleTickets.filter((ticket) => {
-    const matchesSearch = ticket.title
+  useEffect(() => {
+    const fetchCustomerTickets = async () => {
+      const response = await api.post("/ticket/getCustomerTickets", {
+        customerId: currentUser?.id,
+      });
+
+      if (response.status === 200) {
+        setTickets(response.data);
+      }
+      console.log(response.data);
+    };
+
+    fetchCustomerTickets();
+  }, []);
+
+  const filteredTickets = tickets.filter((ticket) => {
+    const matchesSearch = ticket.ticket_title
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     const matchesStatus =
-      statusFilter === "all" || ticket.status === statusFilter;
+      statusFilter === "all" || ticket.ticket_status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const handleTicketClick = (ticketId) => {
+    setSelectedTicketId(ticketId);
+  };
+
+  const handleBackFromTicketView = () => {
+    setSelectedTicketId(null);
+  };
+
+  if (selectedTicketId) {
+    return (
+      <CustomerTicketView
+        ticketId={selectedTicketId}
+        onBack={handleBackFromTicketView}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -87,12 +93,13 @@ export function CustomerTicketMenu() {
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
+          {/* Update the Select component options to match the database ENUM values */}
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="open">Open</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="in-progress">In Progress</SelectItem>
             <SelectItem value="resolved">Resolved</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="unresolved">Unresolved</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -106,23 +113,35 @@ export function CustomerTicketMenu() {
               <TableHead>Status</TableHead>
               <TableHead>Priority</TableHead>
               <TableHead>Created</TableHead>
-              <TableHead>Last Updated</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredTickets.map((ticket) => (
-              <TableRow key={ticket.id}>
-                <TableCell className="font-medium">{ticket.id}</TableCell>
-                <TableCell>{ticket.title}</TableCell>
+              <TableRow
+                key={ticket.ticket_id}
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => handleTicketClick(ticket.ticket_id)}
+              >
+                <TableCell className="font-medium">
+                  {ticket.ticket_id}
+                </TableCell>
+                <TableCell>{ticket.ticket_title}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    {statusIcons[ticket.status]}
-                    <span className="capitalize">{ticket.status}</span>
+                    {statusIcons[ticket.ticket_status]}
+                    <span className="capitalize">{ticket.ticket_status}</span>
                   </div>
                 </TableCell>
-                <TableCell className="capitalize">{ticket.priority}</TableCell>
-                <TableCell>{ticket.created}</TableCell>
-                <TableCell>{ticket.lastUpdated}</TableCell>
+                <TableCell className="capitalize">
+                  {ticket.ticket_priority}
+                </TableCell>
+                <TableCell>
+                  {new Date(ticket.created_at).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

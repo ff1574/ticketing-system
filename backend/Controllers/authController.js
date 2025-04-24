@@ -38,15 +38,15 @@ exports.registerCustomer = [
       const hashedPassword = await bcrypt.hash(password, salt);
 
       // Insert new customer into the database
-      const [result] = await db.query(
-        "INSERT INTO customer (customer_name, customer_email, customer_password) VALUES (?, ?, ?)",
-        [name, email, hashedPassword]
-      );
-      // Mock admin insert
       // const [result] = await db.query(
-      //   "INSERT INTO administrator (administrator_name, administrator_email, administrator_password, administrator_role) VALUES (?, ?, ?, 'admin')",
+      //   "INSERT INTO customer (customer_name, customer_email, customer_password) VALUES (?, ?, ?)",
       //   [name, email, hashedPassword]
       // );
+      // Mock admin insert
+      const [result] = await db.query(
+        "INSERT INTO administrator (administrator_name, administrator_email, administrator_password, administrator_role) VALUES (?, ?, ?, 'admin')",
+        [name, email, hashedPassword]
+      );
 
       // Generate JWT
       const payload = { customer_id: result.insertId };

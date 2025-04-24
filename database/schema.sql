@@ -62,12 +62,18 @@ CREATE TABLE IF NOT EXISTS ticket
     ticket_exp					INT 													DEFAULT 100,
     unique_decline_count		INT														DEFAULT 0,
     
-    created_at 					TIMESTAMP 					DEFAULT CURRENT_TIMESTAMP,
+    is_reserved					BOOLEAN 												DEFAULT false,
+    last_reservation_time		TIMESTAMP												NULL,
+    created_at 					TIMESTAMP 												DEFAULT CURRENT_TIMESTAMP,
     resolved_at					TIMESTAMP,
     
     FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
     FOREIGN KEY (administrator_id) REFERENCES administrator (administrator_id)
 );
+
+CREATE INDEX idx_ticket_status_reserved ON ticket(ticket_status, is_reserved);
+CREATE INDEX idx_ticket_priority ON ticket(ticket_priority);
+CREATE INDEX idx_ticket_reservation ON ticket(is_reserved, ticket_status, last_reservation_time);
 
 DROP TABLE IF EXISTS ticket_decline_history;
 CREATE TABLE IF NOT EXISTS ticket_decline_history (
@@ -79,3 +85,23 @@ CREATE TABLE IF NOT EXISTS ticket_decline_history (
   FOREIGN KEY (ticket_id) REFERENCES ticket(ticket_id),
   FOREIGN KEY (administrator_id) REFERENCES administrator(administrator_id)
 );
+
+DROP TABLE IF EXISTS ticket_message;
+CREATE TABLE IF NOT EXISTS ticket_message (
+  message_id              		INT                         AUTO_INCREMENT          	PRIMARY KEY,
+  ticket_id               		INT                                                     NOT NULL,
+  sender_type             		ENUM('customer', 'administrator')                       NOT NULL,
+  sender_id               		INT                                                     NOT NULL,
+  message_content         		TEXT                                                    NOT NULL,
+  sent_at                 		TIMESTAMP                                               DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (ticket_id) REFERENCES ticket(ticket_id),
+    
+-- Conditional foreign key based on sender_type
+  FOREIGN KEY (sender_id) REFERENCES customer(customer_id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (sender_id) REFERENCES administrator(administrator_id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- Indexes to optimize queries
+CREATE INDEX idx_ticket_message_ticket ON ticket_message(ticket_id);
+CREATE INDEX idx_ticket_message_sender ON ticket_message(sender_type, sender_id);

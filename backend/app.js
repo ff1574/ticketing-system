@@ -8,6 +8,10 @@ const authRoutes = require("./Routes/authRoutes");
 const customerRoutes = require("./Routes/customerRoutes");
 const ticketRoutes = require("./Routes/ticketRoutes");
 
+const {
+  releaseTimedOutReservations,
+} = require("./Controllers/ticketController");
+
 const app = express();
 
 app.use(bodyParser.json({ limit: "50mb" }));
@@ -27,3 +31,15 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Run cleanup every minute to release orphaned tickets
+setInterval(async () => {
+  try {
+    const released = await releaseTimedOutReservations();
+    if (released > 0) {
+      console.log(`Released ${released} abandoned ticket reservations`);
+    }
+  } catch (error) {
+    console.error("Failed to release timed-out reservations:", error);
+  }
+}, 60000);
