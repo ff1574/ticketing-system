@@ -51,28 +51,10 @@ export function CustomerTicketView({ ticketId, onBack }) {
         setLoading(true);
         const response = await api.get(`/ticket/${ticketId}`);
         setTicket(response.data);
-
-        const initialMessage = {
-          message_id: `${ticketId}`,
-          message_content: response.data.ticket_description,
-          sent_at: response.data.created_at,
-          sender_type: "customer",
-          sender_id: currentUser.id,
-          sender: {
-            name: currentUser.name,
-            avatar: currentUser.avatar,
-          },
-        };
-
-        const messagesResponse = await api.get(`/ticket/${ticketId}/messages`);
-        const allMessages = [initialMessage, ...messagesResponse.data];
-        setMessages(allMessages);
-
-        console.log("Messages data:", allMessages);
+        console.log(response.data);
       } catch (error) {
         console.error("Failed to fetch ticket:", error);
-        showAlert("Failed to load ticket details", "error");
-        onBack();
+        showAlert("Failed to fetch ticket details", "error");
       } finally {
         setLoading(false);
       }
@@ -81,23 +63,20 @@ export function CustomerTicketView({ ticketId, onBack }) {
     if (ticketId) {
       fetchTicket();
     }
-  }, [ticketId, currentUser, showAlert, onBack]);
+  }, [ticketId, showAlert]);
 
-  const handleSendMessage = async (content, attachment) => {
+  const handleSendMessage = async (content) => {
     try {
-      const response = await api.post(`/ticket/${ticketId}/messages`, {
-        ticket_id: ticketId,
-        sender_type: "customer",
-        sender_id: currentUser.id,
-        message_content: content,
-        attachment,
+      await api.post(`/ticket/${ticketId}/message`, {
+        ticketId,
+        content,
+        senderType: "customer",
+        senderId: currentUser.id,
       });
-
-      return response.data.message;
+      // The TicketChat component will handle updating the UI
     } catch (error) {
       console.error("Failed to send message:", error);
       showAlert("Failed to send message", "error");
-      throw error;
     }
   };
 
@@ -247,7 +226,8 @@ export function CustomerTicketView({ ticketId, onBack }) {
 }
 
 CustomerTicketView.propTypes = {
-  ticketId: PropTypes.string.isRequired,
+  ticketId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+    .isRequired,
   onBack: PropTypes.func.isRequired,
 };
 

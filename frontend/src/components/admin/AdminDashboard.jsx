@@ -1,4 +1,4 @@
-import {} from "react";
+import { useState } from "react";
 import {
   LayoutGrid,
   Users,
@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TicketSwiper from "./TicketSwiper";
+import AdminTicketMenu from "./AdminTicketMenu";
 
 const stats = [
   {
@@ -57,9 +58,17 @@ const actions = [
 ];
 
 export function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState("overview");
+
+  const handleActionClick = (href) => {
+    if (href === "#tickets") {
+      setActiveTab("tickets");
+    }
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto p-4 space-y-4">
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
           <TabsList>
@@ -69,7 +78,11 @@ export function AdminDashboard() {
             </TabsTrigger>
             <TabsTrigger value="tickets" className="gap-2">
               <Ticket className="h-4 w-4" />
-              Review Tickets
+              My Tickets
+            </TabsTrigger>
+            <TabsTrigger value="new-tickets" className="gap-2">
+              <Ticket className="h-4 w-4" />
+              New Tickets
             </TabsTrigger>
           </TabsList>
         </div>
@@ -110,7 +123,11 @@ export function AdminDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <Button variant="ghost" className="w-full justify-start">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => handleActionClick(action.href)}
+                  >
                     Access {action.title}
                   </Button>
                 </CardContent>
@@ -122,9 +139,21 @@ export function AdminDashboard() {
         <TabsContent value="tickets" className="mt-0">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-lg font-semibold">Review Tickets</h2>
+              <h2 className="text-lg font-semibold">My Assigned Tickets</h2>
               <p className="text-sm text-muted-foreground">
-                Process and respond to support tickets
+                View and respond to tickets assigned to you
+              </p>
+            </div>
+          </div>
+          <AdminTicketMenu />
+        </TabsContent>
+
+        <TabsContent value="new-tickets" className="mt-0">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold">New Tickets</h2>
+              <p className="text-sm text-muted-foreground">
+                Process and respond to new support tickets
               </p>
             </div>
           </div>

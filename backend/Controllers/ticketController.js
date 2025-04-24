@@ -504,27 +504,18 @@ exports.getAllOpenTickets = async (req, res) => {
 };
 
 exports.getTicketById = async (req, res) => {
-  const ticketId = parseInt(req.params.ticketId, 10);
-  if (isNaN(ticketId)) {
-    return res.status(400).json({ message: "Invalid ticket ID" });
-  }
   try {
-    const ticket = await db.execute(
-      `SELECT ticket_id, ticket_title, ticket_description, ticket_status, ticket_priority, created_at
-       FROM ticket
-       WHERE ticket_id = ?`,
+    const ticketId = req.params.ticketId;
+    const [ticket] = await db.execute(
+      "SELECT * FROM ticket WHERE ticket_id = ?",
       [ticketId]
     );
-    if (ticket.length === 0) {
-      return res.status(404).json({ message: "Ticket not found" });
-    }
-    res.json({
-      ticket,
-    });
+
+    res.json(ticket[0] || null); // Return null if no ticket found
   } catch (error) {
     console.error("Get Ticket Error:", error);
     res.status(500).json({
-      message: "Failed to fetch ticket",
+      message: "Failed to fetch ticket details",
       error: error.message,
     });
   }
@@ -560,6 +551,56 @@ exports.getTicketMessages = async (req, res) => {
     console.error("Get Ticket Messages Error:", error);
     res.status(500).json({
       message: "Failed to fetch ticket messages",
+      error: error.message,
+    });
+  }
+};
+
+exports.sendTicketMessage = async (req, res) => {
+  try {
+    const ticketId = parseInt(req.params.ticketId, 10);
+    let { content, senderType, senderId } = req.body;
+
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ message: "Invalid ticket ID" });
+    }
+
+    if (!content || !senderType || !senderId) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+    
+    if(senderType === "admin") senderType = "administrator";
+
+    // Insert message into database
+    const [result] = await db.execute(
+      `INSERT INTO ticket_message 
+        (ticket_id, sender_type, sender_id, message_content)
+       VALUES (?, ?, ?, ?)`,
+      [ticketId, senderType, senderId, content]
+    );
+
+    // Get inserted message to return in response
+    const [message] = await db.execute(
+      `SELECT 
+        message_id AS messageId,
+        sender_type AS senderType,
+        sender_id AS senderId,
+        message_content AS messageContent,
+        sent_at AS sentAt
+       FROM ticket_message
+       WHERE message_id = ?`,
+      [result.insertId]
+    );
+
+    res.status(201).json({
+      message: "Message sent successfully",
+      messageId: result.insertId,
+      ...message[0],
+    });
+  } catch (error) {
+    console.error("Send Ticket Message Error:", error);
+    res.status(500).json({
+      message: "Failed to send message",
       error: error.message,
     });
   }
@@ -764,6 +805,44 @@ exports.getCustomerTickets = async (req, res) => {
     console.error("Get Customer Tickets Error:", error);
     res.status(500).json({
       message: "Failed to fetch customer tickets",
+      error: error.message,
+    });
+  }
+};
+
+exports.getAdminTickets = async (req, res) => {
+  try {
+    const { administratorId } = req.body;
+
+    if (!administratorId) {
+      return res.status(400).json({ message: "Administrator ID is required" });
+    }
+
+    // Get tickets assigned to this admin with corrected query
+    const [tickets] = await db.execute(
+      `SELECT t.*, 
+          c.customer_name, 
+          c.customer_email as customerEmail
+        FROM ticket t
+        LEFT JOIN customer c ON t.customer_id = c.customer_id
+        WHERE t.administrator_id = ?
+        ORDER BY
+          CASE 
+            WHEN t.ticket_status = 'open' THEN 1
+            WHEN t.ticket_status = 'pending' THEN 2
+            WHEN t.ticket_status = 'resolved' THEN 3
+            WHEN t.ticket_status = 'unresolved' THEN 4
+            ELSE 5
+          END,
+          t.created_at DESC`,
+      [administratorId]
+    );
+
+    res.json(tickets);
+  } catch (error) {
+    console.error("Get Admin Tickets Error:", error);
+    res.status(500).json({
+      message: "Failed to fetch admin tickets",
       error: error.message,
     });
   }

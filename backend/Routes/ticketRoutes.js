@@ -9,7 +9,9 @@ const {
   assignTicketToAgent,
   declineTicket,
   getCustomerTickets,
+  getAdminTickets,
   getTicketMessages,
+  sendTicketMessage,
 } = require("../Controllers/ticketController");
 const router = express.Router();
 
@@ -22,6 +24,8 @@ router.post("/ticket/reserve", getReservedTickets);
 router.post("/ticket/release", releaseReservation);
 router.post("/ticket/heartbeat", heartbeatReservation);
 router.post("/ticket/getCustomerTickets", getCustomerTickets);
+router.post("/ticket/getAdminTickets", getAdminTickets);
+router.post("/ticket/:ticketId/message", sendTicketMessage);
 
 router.put("/ticket/assignTicketToAgent/:ticketId", assignTicketToAgent);
 router.put("/ticket/declineTicket/:ticketId", declineTicket);

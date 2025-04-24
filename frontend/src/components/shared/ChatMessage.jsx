@@ -1,7 +1,6 @@
-import { useState } from "react";
 import PropTypes from "prop-types";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
@@ -11,15 +10,26 @@ export function ChatMessage({
   showAvatar = true,
   animate = true,
 }) {
-  const [imageLoaded, setImageLoaded] = useState(false);
-
   const messageVariants = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0, transition: { duration: 0.3 } },
   };
 
-  const formattedTime = format(new Date(message.sent_at), "h:mm a");
-  const formattedDate = format(new Date(message.sent_at), "MMM d, yyyy");
+  // Format the dates safely
+  let formattedTime = "Unknown time";
+  let formattedDate = "Unknown date";
+
+  if (message.sent_at) {
+    try {
+      const date = new Date(message.sent_at);
+      if (isValid(date)) {
+        formattedTime = format(date, "h:mm a");
+        formattedDate = format(date, "MMM d, yyyy");
+      }
+    } catch (error) {
+      console.error("Error formatting date:", error);
+    }
+  }
 
   return (
     <motion.div
@@ -66,29 +76,6 @@ export function ChatMessage({
           <div className="whitespace-pre-wrap break-words">
             {message.message_content}
           </div>
-
-          {message.attachment && (
-            <div className="mt-2">
-              <div
-                className={cn(
-                  "rounded-md overflow-hidden bg-background/20 backdrop-blur-sm",
-                  !imageLoaded && "animate-pulse h-32"
-                )}
-              >
-                <img
-                  src={message.attachment.url || "/placeholder.svg"}
-                  alt={message.attachment.name || "Attachment"}
-                  className="max-w-full h-auto object-contain"
-                  onLoad={() => setImageLoaded(true)}
-                />
-              </div>
-              {message.attachment.name && (
-                <div className="text-xs mt-1 opacity-80">
-                  {message.attachment.name}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
@@ -129,10 +116,7 @@ ChatMessage.propTypes = {
     sender: PropTypes.shape({
       name: PropTypes.string.isRequired,
       avatar: PropTypes.string,
-    }),
-    attachment: PropTypes.shape({
-      url: PropTypes.string.isRequired,
-      name: PropTypes.string,
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     }),
   }).isRequired,
   isCurrentUser: PropTypes.bool.isRequired,

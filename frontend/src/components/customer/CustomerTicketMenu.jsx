@@ -45,7 +45,6 @@ export function CustomerTicketMenu() {
       if (response.status === 200) {
         setTickets(response.data);
       }
-      console.log(response.data);
     };
 
     fetchCustomerTickets();

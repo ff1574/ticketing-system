@@ -24,7 +24,6 @@ import AuthContext from "@/context/AuthContext";
 import TicketChat from "../shared/TicketChat";
 import api from "@/utils/api";
 
-// Update the status icons to match the database ENUM values
 const statusIcons = {
   open: <Clock className="h-4 w-4 text-blue-500" />,
   pending: <Clock className="h-4 w-4 text-yellow-500" />,
@@ -46,72 +45,107 @@ export function AdminTicketView({ ticket, onBack }) {
   const [messages, setMessages] = useState([]);
   const [activeTab, setActiveTab] = useState("chat");
 
-  // Update the useEffect to create the initial message from ticket description
+  // Fetch messages for this ticket
   useEffect(() => {
-    const fetchTicket = async () => {
+    const fetchMessages = async () => {
       try {
-        // Create initial message from ticket description
-        const initialMessage = {
-          message_id: `ticket-${ticket.ticket_id}`,
-          message_content: ticket.ticket_description,
-          sent_at: ticket.created_at,
-          sender_type: "customer",
-          sender_id: ticket.customer_id,
-          sender: {
-            name: ticket.customer_name || "Customer",
-            avatar: ticket.customer_avatar,
-          },
-        };
+        setLoading(true);
+        if (!ticket?.ticket_id) {
+          setLoading(false);
+          return;
+        }
 
-        // Fetch messages
-        const messagesResponse = await api.get(`/ticket/${ticketId}/messages`);
-        const allMessages = [initialMessage, ...messagesResponse.data.messages];
-        setMessages(allMessages);
+        const response = await api.get(`/ticket/${ticket.ticket_id}/messages`);
+
+        // Transform message data to match our component's format
+        const formattedMessages = response.data.map((msg) => ({
+          message_id: msg.messageId,
+          message_content: msg.messageContent,
+          sent_at: msg.sentAt,
+          sender_type: msg.senderType,
+          sender_id: msg.senderId,
+          sender: {
+            id: msg.senderId,
+            name: msg.senderType === "customer" ? "Customer" : "Support Agent",
+            avatar: `/avatars/${msg.senderType}.png`,
+          },
+        }));
+
+        setMessages(formattedMessages);
       } catch (error) {
-        console.error("Failed to fetch ticket:", error);
-        showAlert("Failed to load ticket details", "error");
-        onBack();
+        console.error("Failed to fetch messages:", error);
+        showAlert("Failed to load conversation", "error");
       } finally {
         setLoading(false);
       }
     };
-  }, [ticket, showAlert, onBack]);
 
-  // Update the handleSendMessage function to match the database structure
-  const handleSendMessage = async (content, attachment) => {
+    fetchMessages();
+  }, [ticket, showAlert]);
+
+  // Handle sending a message
+  const handleSendMessage = async (content) => {
+    if (!ticket?.ticket_id) {
+      showAlert("Invalid ticket data", "error");
+      return;
+    }
+
     try {
-      // In a real app, you'd send the message to your API
-      const response = await api.post(`/ticket/${ticketId}/messages`, {
-        ticket_id: ticketId,
-        sender_type: "administrator",
-        sender_id: currentUser.id,
-        message_content: content,
-        attachment,
+      await api.post(`/ticket/${ticket.ticket_id}/message`, {
+        ticketId: ticket.ticket_id,
+        content,
+        senderType: 'administrator',
+        senderId: currentUser.id,
       });
 
-      return response.data.message;
+      // The TicketChat component will handle updating the UI
     } catch (error) {
       console.error("Failed to send message:", error);
       showAlert("Failed to send message", "error");
-      throw error;
     }
   };
 
-  // Update the handleStatusChange function to match the database structure
-  const handleStatusChange = async (newStatus) => {
+  // Handle ticket status change
+  const handleStatusChange = async (status) => {
+    if (!ticket?.ticket_id) {
+      showAlert("Invalid ticket data", "error");
+      return;
+    }
+
     try {
-      // In a real app, you'd update the ticket status via your API
-      const response = await api.put(`/ticket/${ticket_ticketId}/status`, {
-        ticket_status: newStatus,
-        administrator_id: currentUser.id,
+      await api.put(`/ticket/${ticket.ticket_id}/status`, {
+        status,
       });
 
-      showAlert(`Ticket marked as ${newStatus}`, "success");
+      // Update local ticket status (assuming we want immediate UI feedback)
+      ticket.ticket_status = status;
+
+      // Force component re-render
+      setActiveTab(activeTab);
+
+      showAlert(`Ticket marked as ${status}`, "success");
+
+      // If resolved or unresolved, notify user that chat is disabled
+      if (status === "resolved" || status === "unresolved") {
+        showAlert("Chat has been disabled for this ticket", "info");
+      }
     } catch (error) {
-      console.error("Failed to update ticket status:", error);
+      console.error("Failed to change ticket status:", error);
       showAlert("Failed to update ticket status", "error");
     }
   };
+
+  // Safely access ticket properties with defaults
+  const ticketTitle = ticket?.ticket_title || "Unknown Title";
+  const ticketId = ticket?.ticket_id || "N/A";
+  const ticketStatus = ticket?.ticket_status || "open";
+  const ticketPriority = ticket?.ticket_priority || "medium";
+  const ticketExp = ticket?.ticket_exp || 0;
+  const customerName = ticket?.customer_name || "Unknown Customer";
+  const customerEmail = ticket?.customerEmail || "N/A";
+  const createdAt = ticket?.created_at
+    ? new Date(ticket.created_at).toLocaleString()
+    : "Unknown";
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
@@ -123,36 +157,26 @@ export function AdminTicketView({ ticket, onBack }) {
           </Button>
 
           <div>
-            {/* Update references to ticket properties throughout the component */}
-            <h1 className="text-xl font-semibold">
-              {ticket.ticket_title}
-            </h1>
+            <h1 className="text-xl font-semibold">{ticketTitle}</h1>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {/* Update references to ticket properties throughout the component */}
-              <span>Ticket #{ticket.ticket_id}</span>
+              <span>Ticket #{ticketId}</span>
               <span>•</span>
               <div className="flex items-center gap-1">
-                {/* Update references to ticket properties throughout the component */}
-                {statusIcons[ticket.ticket_status]}
-                <span className="capitalize">
-                  {ticket.ticket_status}
-                </span>
+                {statusIcons[ticketStatus]}
+                <span className="capitalize">{ticketStatus}</span>
               </div>
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Update references to ticket properties throughout the component */}
-          <Badge className={priorityColors[ticket.ticket_priority]}>
-            {ticket.ticket_priority.charAt(0).toUpperCase() +
-              ticket.ticket_priority.slice(1)}
+          <Badge className={priorityColors[ticketPriority]}>
+            {ticketPriority.charAt(0).toUpperCase() + ticketPriority.slice(1)}
           </Badge>
 
           <div className="flex items-center text-sm">
             <Star className="h-4 w-4 mr-1 text-amber-400" />
-            {/* Update references to ticket properties throughout the component */}
-            <span>{ticket.ticket_exp} XP</span>
+            <span>{ticketExp} XP</span>
           </div>
 
           <DropdownMenu>
@@ -162,7 +186,6 @@ export function AdminTicketView({ ticket, onBack }) {
                 <span className="sr-only">More options</span>
               </Button>
             </DropdownMenuTrigger>
-            {/* Update the dropdown menu items to match the database ENUM values */}
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => handleStatusChange("resolved")}>
                 <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
@@ -211,15 +234,13 @@ export function AdminTicketView({ ticket, onBack }) {
             </div>
           ) : (
             <TicketChat
-              ticketId={ticketId}
+              ticketId={ticket?.ticket_id}
               currentUser={currentUser}
               initialMessages={messages}
               onSendMessage={handleSendMessage}
               isLoading={false}
-              /* Update the disabled check for the chat */
               disabled={
-                ticket.ticket_status === "resolved" ||
-                ticket.ticket_status === "unresolved"
+                ticketStatus === "resolved" || ticketStatus === "unresolved"
               }
             />
           )}
@@ -233,34 +254,26 @@ export function AdminTicketView({ ticket, onBack }) {
                 <div>
                   <p className="text-sm text-muted-foreground">Status</p>
                   <div className="flex items-center gap-2 mt-1">
-                    {statusIcons[ticket.ticket_status]}
-                    <span className="capitalize">
-                      {ticket.ticket_status}
-                    </span>
+                    {statusIcons[ticketStatus]}
+                    <span className="capitalize">{ticketStatus}</span>
                   </div>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Priority</p>
                   <div className="mt-1">
-                    <Badge
-                      className={priorityColors[ticket.ticket_priority]}
-                    >
-                      {ticket.ticket_priority.charAt(0).toUpperCase() +
-                        ticket.ticket_priority.slice(1)}
+                    <Badge className={priorityColors[ticketPriority]}>
+                      {ticketPriority.charAt(0).toUpperCase() +
+                        ticketPriority.slice(1)}
                     </Badge>
                   </div>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Created</p>
-                  <p className="mt-1">
-                    {new Date(ticket.created_at).toLocaleString()}
-                  </p>
+                  <p className="mt-1">{createdAt}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Last Updated</p>
-                  <p className="mt-1">
-                    {new Date(ticket.created_at).toLocaleString()}
-                  </p>
+                  <p className="mt-1">{createdAt}</p>
                 </div>
               </div>
             </div>
@@ -274,11 +287,11 @@ export function AdminTicketView({ ticket, onBack }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Name</p>
-                  <p className="mt-1">{ticket.customer_name}</p>
+                  <p className="mt-1">{customerName}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="mt-1">{ticket.customerEmail || "N/A"}</p>
+                  <p className="mt-1">{customerEmail}</p>
                 </div>
               </div>
             </div>
@@ -288,11 +301,10 @@ export function AdminTicketView({ ticket, onBack }) {
             <div>
               <h2 className="text-lg font-semibold mb-2">Actions</h2>
               <div className="flex gap-2">
-                {/* Update the action buttons at the bottom */}
                 <Button
                   variant="outline"
                   onClick={() => handleStatusChange("resolved")}
-                  disabled={ticket.ticket_status === "resolved"}
+                  disabled={ticketStatus === "resolved"}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Mark as Resolved
@@ -300,7 +312,7 @@ export function AdminTicketView({ ticket, onBack }) {
                 <Button
                   variant="outline"
                   onClick={() => handleStatusChange("unresolved")}
-                  disabled={ticket.ticket_status === "unresolved"}
+                  disabled={ticketStatus === "unresolved"}
                 >
                   <XCircle className="h-4 w-4 mr-2" />
                   Mark as Unresolved
@@ -315,8 +327,24 @@ export function AdminTicketView({ ticket, onBack }) {
 }
 
 AdminTicketView.propTypes = {
-  ticket: PropTypes.object.isRequired,
-
+  ticket: PropTypes.shape({
+    ticket_id: PropTypes.number,
+    ticket_title: PropTypes.string,
+    ticket_description: PropTypes.string,
+    ticket_urgency: PropTypes.oneOf(["low", "medium", "high"]),
+    ticket_impact: PropTypes.oneOf(["low", "medium", "high"]),
+    ticket_priority: PropTypes.oneOf(["low", "medium", "high"]),
+    ticket_status: PropTypes.oneOf([
+      "open",
+      "pending",
+      "resolved",
+      "unresolved",
+    ]),
+    ticket_exp: PropTypes.number,
+    customer_name: PropTypes.string,
+    customerEmail: PropTypes.string,
+    created_at: PropTypes.string,
+  }),
   onBack: PropTypes.func.isRequired,
 };
 
