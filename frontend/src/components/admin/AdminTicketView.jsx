@@ -50,12 +50,12 @@ export function AdminTicketView({ ticket, onBack }) {
     const fetchMessages = async () => {
       try {
         setLoading(true);
-        if (!ticket?.ticket_id) {
+        if (!ticket?.ticketId) {
           setLoading(false);
           return;
         }
 
-        const response = await api.get(`/ticket/${ticket.ticket_id}/messages`);
+        const response = await api.get(`/ticket/${ticket.ticket_id}/message`);
 
         // Transform message data to match our component's format
         const formattedMessages = response.data.map((msg) => ({
@@ -85,24 +85,7 @@ export function AdminTicketView({ ticket, onBack }) {
 
   // Handle sending a message
   const handleSendMessage = async (content) => {
-    if (!ticket?.ticket_id) {
-      showAlert("Invalid ticket data", "error");
-      return;
-    }
-
-    try {
-      await api.post(`/ticket/${ticket.ticket_id}/message`, {
-        ticketId: ticket.ticket_id,
-        content,
-        senderType: 'administrator',
-        senderId: currentUser.id,
-      });
-
-      // The TicketChat component will handle updating the UI
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      showAlert("Failed to send message", "error");
-    }
+    console.log("Message content received from input:", content);
   };
 
   // Handle ticket status change

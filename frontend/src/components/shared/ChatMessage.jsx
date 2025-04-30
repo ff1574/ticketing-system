@@ -45,10 +45,10 @@ export function ChatMessage({
         <Avatar className="h-8 w-8">
           <AvatarImage
             src={message.sender.avatar || "/placeholder.svg"}
-            alt={message.sender.name}
+            alt={message.sender_type.charAt(0).toUpperCase()}
           />
           <AvatarFallback>
-            {message.sender.name.charAt(0).toUpperCase()}
+            {message.sender_type.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
       )}
@@ -61,7 +61,7 @@ export function ChatMessage({
       >
         {!isCurrentUser && (
           <span className="text-xs text-muted-foreground mb-1">
-            {message.sender.name}
+            {message.sender_type}
           </span>
         )}
 
@@ -89,10 +89,10 @@ export function ChatMessage({
         <Avatar className="h-8 w-8">
           <AvatarImage
             src={message.sender.avatar || "/placeholder.svg"}
-            alt={message.sender.name}
+            alt={message.sender_type.charAt(0).toUpperCase()}
           />
           <AvatarFallback>
-            {message.sender.name.charAt(0).toUpperCase()}
+            {message.sender_type.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
       )}

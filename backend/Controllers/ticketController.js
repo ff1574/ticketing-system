@@ -558,28 +558,50 @@ exports.getTicketMessages = async (req, res) => {
 
 exports.sendTicketMessage = async (req, res) => {
   try {
+    console.log("[DEBUG] Send Ticket Message Request:", req.params);
     const ticketId = parseInt(req.params.ticketId, 10);
     let { content, senderType, senderId } = req.body;
 
+    console.log(`[DEBUG] Sending message to ticket ${ticketId}`);
+    console.log(`[DEBUG] Message data:`, {
+      senderType,
+      senderId,
+      contentLength: content?.length,
+    });
+
     if (isNaN(ticketId)) {
+      console.log(`[DEBUG] Invalid ticket ID: ${req.params.ticketId}`);
       return res.status(400).json({ message: "Invalid ticket ID" });
     }
 
     if (!content || !senderType || !senderId) {
+      console.log(`[DEBUG] Missing required fields:`, {
+        content: !!content,
+        senderType: !!senderType,
+        senderId: !!senderId,
+      });
       return res.status(400).json({ message: "Missing required fields" });
     }
-    
-    if(senderType === "admin") senderType = "administrator";
+
+    if (senderType === "admin") {
+      console.log(
+        `[DEBUG] Converting 'admin' to 'administrator' for senderType`
+      );
+      senderType = "administrator";
+    }
 
     // Insert message into database
+    console.log(`[DEBUG] Inserting message into database`);
     const [result] = await db.execute(
       `INSERT INTO ticket_message 
         (ticket_id, sender_type, sender_id, message_content)
        VALUES (?, ?, ?, ?)`,
       [ticketId, senderType, senderId, content]
     );
+    console.log(`[DEBUG] Message inserted with ID: ${result.insertId}`);
 
     // Get inserted message to return in response
+    console.log(`[DEBUG] Retrieving inserted message`);
     const [message] = await db.execute(
       `SELECT 
         message_id AS messageId,
@@ -591,14 +613,18 @@ exports.sendTicketMessage = async (req, res) => {
        WHERE message_id = ?`,
       [result.insertId]
     );
+    console.log(`[DEBUG] Retrieved message:`, message[0]);
 
+    console.log(
+      `[DEBUG] Sending successful response for message ID: ${result.insertId}`
+    );
     res.status(201).json({
       message: "Message sent successfully",
       messageId: result.insertId,
-      ...message[0],
+      sentAt: message[0].sentAt,
     });
   } catch (error) {
-    console.error("Send Ticket Message Error:", error);
+    console.error("[DEBUG] Send Ticket Message Error:", error);
     res.status(500).json({
       message: "Failed to send message",
       error: error.message,

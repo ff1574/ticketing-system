@@ -37,24 +37,24 @@ export function AdminTicketMenu() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchAdminTickets = async () => {
-      try {
-        setLoading(true);
-        const response = await api.post("/ticket/getAdminTickets", {
-          administratorId: currentUser?.id,
-        });
+  const fetchAdminTickets = async () => {
+    try {
+      setLoading(true);
+      const response = await api.post("/ticket/getAdminTickets", {
+        administratorId: currentUser?.id,
+      });
 
-        if (response.status === 200) {
-          setTickets(response.data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch admin tickets:", error);
-      } finally {
-        setLoading(false);
+      if (response.status === 200) {
+        setTickets(response.data);
       }
-    };
+    } catch (error) {
+      console.error("Failed to fetch admin tickets:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (currentUser?.id) {
       fetchAdminTickets();
     }

@@ -66,18 +66,7 @@ export function CustomerTicketView({ ticketId, onBack }) {
   }, [ticketId, showAlert]);
 
   const handleSendMessage = async (content) => {
-    try {
-      await api.post(`/ticket/${ticketId}/message`, {
-        ticketId,
-        content,
-        senderType: "customer",
-        senderId: currentUser.id,
-      });
-      // The TicketChat component will handle updating the UI
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      showAlert("Failed to send message", "error");
-    }
+    console.log("Message content received from input:", content);
   };
 
   if (loading) {

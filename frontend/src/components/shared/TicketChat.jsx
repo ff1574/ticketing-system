@@ -29,30 +29,54 @@ export function TicketChat({
       try {
         const response = await api.get(`/ticket/${ticketId}/messages`);
 
-        const formattedMessages = response.data.map((msg) => ({
-          message_id: msg.messageId,
-          message_content: msg.messageContent,
-          sent_at: msg.sentAt,
-          sender_type: msg.senderType,
-          sender_id: msg.senderId,
-          sender: {
-            id: msg.senderId,
-            name: msg.senderType === "customer" ? "Customer" : "Support Agent",
-            avatar: `/avatars/${msg.senderType}.png`,
-          },
-        }));
+        // Make sure we're handling the data correctly
+        const formattedMessages = response.data.map((msg) => {
+          // Check if messageContent is a string or an object
+          let content = msg.messageContent;
+
+          // If it looks like JSON but is stored as a string, handle it
+          if (
+            typeof content === "string" &&
+            (content.startsWith("{") || content.startsWith("["))
+          ) {
+            try {
+              // Try to parse it, but if it fails just use the original string
+              const parsed = JSON.parse(content);
+              // Check if this is an actual message response that was saved incorrectly
+              if (parsed.message && typeof parsed.message === "string") {
+                content = parsed.message;
+              }
+            } catch (e) {
+              // If parsing fails, keep the original content
+              console.log("Failed to parse message content as JSON", e);
+            }
+          }
+
+          return {
+            message_id: msg.messageId,
+            message_content: content, // Use the cleaned content
+            sent_at: msg.sentAt,
+            sender_type: msg.senderType,
+            sender_id: msg.senderId,
+            sender: {
+              id: msg.senderId,
+              name:
+                msg.senderType === "customer" ? "Customer" : "Support Agent",
+              avatar: `/avatars/${msg.senderType}.png`,
+            },
+          };
+        });
 
         setMessages(formattedMessages);
-        setHasMoreMessages(formattedMessages.length >= 20);
       } catch (error) {
         console.error("Failed to fetch messages:", error);
       }
     };
 
-    if (ticketId && messages.length === 0) {
+    if (ticketId) {
       fetchMessages();
     }
-  }, [ticketId, messages.length]);
+  }, [ticketId]);
 
   // Scroll to bottom when new messages are added
   useEffect(() => {
@@ -70,7 +94,7 @@ export function TicketChat({
     // Create temporary message for UI feedback
     const tempMessage = {
       message_id: `temp-${Date.now()}`,
-      message_content: content,
+      message_content: content, // Just the text
       sent_at: new Date().toISOString(),
       sender_type: currentUser.role,
       sender_id: currentUser.id,
@@ -90,26 +114,27 @@ export function TicketChat({
       // Send message to server
       const response = await api.post(`/ticket/${ticketId}/message`, {
         ticketId,
-        content,
+        content, // Just sending the text content
         senderType: currentUser.role,
         senderId: currentUser.id,
       });
 
-      // Replace temporary message with real one
+      // Replace temporary message with confirmed one from server
       setMessages((prev) =>
         prev.map((msg) =>
           msg.message_id === tempMessage.message_id
             ? {
-                ...msg,
+                ...tempMessage, // Keep most properties
                 message_id: response.data.messageId,
                 sent_at: response.data.sentAt,
+                // Don't update message_content from response
               }
             : msg
         )
       );
 
       if (onSendMessage) {
-        onSendMessage(response.data);
+        onSendMessage(content); // Just pass the content, not the response
       }
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -163,7 +188,7 @@ export function TicketChat({
       <ScrollArea
         ref={scrollAreaRef}
         className="flex-1 p-4"
-        viewportClassName="h-full"
+        viewportclassname="h-full"
       >
         {hasMoreMessages && (
           <div className="flex justify-center mb-4">
@@ -188,17 +213,16 @@ export function TicketChat({
 
         <AnimatePresence initial={false}>
           {messages.map((message, index) => {
-            const isCurrentUser = message.sender.id === currentUser.id;
-            const showAvatar =
-              index === 0 ||
-              messages[index - 1].sender.id !== message.sender.id;
+            console.log("Message:", message); // Debugging line
+            console.log("Current User:", currentUser); // Debugging line
+            const isCurrentUser = message.sender_type === currentUser.role;
 
             return (
               <ChatMessage
                 key={message.message_id}
                 message={message}
                 isCurrentUser={isCurrentUser}
-                showAvatar={showAvatar}
+                showAvatar={true}
               />
             );
           })}

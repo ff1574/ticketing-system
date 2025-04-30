@@ -25,7 +25,7 @@ export default function TicketSwiper() {
 
   // Keep ref updated with latest ticket IDs
   useEffect(() => {
-    ticketIdsRef.current = reservedTickets.map((t) => t.ticket_id);
+    ticketIdsRef.current = reservedTickets.map((t) => t.ticketId);
   }, [reservedTickets]);
 
   // Function to fetch reserved tickets with request deduplication
@@ -192,22 +192,29 @@ export default function TicketSwiper() {
     try {
       // Handle current ticket action
       const endpoint = isAccepted
-        ? `/ticket/assignTicketToAgent/${currentTicket.ticket_id}`
-        : `/ticket/declineTicket/${currentTicket.ticket_id}`;
+        ? `/ticket/assignTicketToAgent/${currentTicket.ticketId}`
+        : `/ticket/declineTicket/${currentTicket.ticketId}`;
 
       console.log(
-        `[DEBUG] Processing ticket ${currentTicket.ticket_id} with action: ${
+        `[DEBUG] Processing ticket ${currentTicket.ticketId} with action: ${
           isAccepted ? "accept" : "decline"
         }`
       );
 
       const response = await api.put(endpoint, {
-        administrator_id: currentUser.id,
+        administratorId: currentUser.id,
       });
 
       // Update our local state to remove processed ticket
       const updatedTickets = [...reservedTickets];
       updatedTickets.splice(currentIndex, 1);
+
+      console.log(
+        "[DEBUG] After splice - updatedTickets:",
+        updatedTickets,
+        "currentIndex:",
+        currentIndex
+      );
 
       // Show feedback for declined tickets
       if (!isAccepted && response.data.cooldown) {
@@ -226,7 +233,7 @@ export default function TicketSwiper() {
 
       // If accepted, navigate to the ticket chat view
       if (isAccepted) {
-        setAcceptedTicketId(currentTicket.ticket_id);
+        setAcceptedTicketId(currentTicket.ticketId);
       }
 
       // Check if we need to fetch more tickets
@@ -239,7 +246,7 @@ export default function TicketSwiper() {
 
             // Fetch additional tickets if we're running low
             const newTicketsResponse = await api.post("/ticket/reserve", {
-              administrator_id: currentUser.id,
+              administratorId: currentUser.id,
             });
 
             fetchingRef.current = false;
@@ -247,10 +254,10 @@ export default function TicketSwiper() {
             if (newTicketsResponse.data.tickets?.length > 0) {
               // Append new tickets, avoiding duplicates
               const existingIds = new Set(
-                updatedTickets.map((t) => t.ticket_id)
+                updatedTickets.map((t) => t.ticketId)
               );
               const newTickets = newTicketsResponse.data.tickets.filter(
-                (t) => !existingIds.has(t.ticket_id)
+                (t) => !existingIds.has(t.ticketId)
               );
 
               console.log(
@@ -366,7 +373,7 @@ export default function TicketSwiper() {
       <AnimatePresence>
         {reservedTickets.length > 0 && (
           <TicketCard
-            key={reservedTickets[currentIndex]?.ticket_id}
+            key={reservedTickets[currentIndex]?.ticketId}
             ticket={reservedTickets[currentIndex]}
             onAccept={() => handleSwipeResult(true)}
             onDecline={() => handleSwipeResult(false)}
